@@ -30,8 +30,6 @@
 
 #include<mutex>
 #include<thread>
-
-
 namespace ORB_SLAM2
 {
 
@@ -47,23 +45,22 @@ void LoopClosing::SetTracker(Tracking *pTracker)
 {
     mpTracker=pTracker;
 }
-
+//
 void LoopClosing::SetLocalMapper(LocalMapping *pLocalMapper)
 {
     mpLocalMapper=pLocalMapper;
 }
-
-
 void LoopClosing::Run()
 {
     mbFinished =false;
-
+//mbFinished??
     while(1)
     {
         // Check if there are keyframes in the queue
         if(CheckNewKeyFrames())
         {
             // Detect loop candidates and check covisibility consistency
+//检测loop candidates， covisibility consistency是什么
             if(DetectLoop())
             {
                // Compute similarity transformation [sR|t]
@@ -92,12 +89,16 @@ void LoopClosing::InsertKeyFrame(KeyFrame *pKF)
     unique_lock<mutex> lock(mMutexLoopQueue);
     if(pKF->mnId!=0)
         mlpLoopKeyFrameQueue.push_back(pKF);
+//如果frameID不为0,就将它push到这个list容器mlpLoopKeyFrameQueue里
+//mnId为长无符号整型，是在keyframe.h中定义，代表Frame ID
 }
 
 bool LoopClosing::CheckNewKeyFrames()
 {
     unique_lock<mutex> lock(mMutexLoopQueue);
     return(!mlpLoopKeyFrameQueue.empty());
+//检查是否有新的keyFrame，若非空，则返回true
+//mlpLoopKeyFrameQueue是一个list对象，list是一个双向链表，可双向插入删除元素，
 }
 
 bool LoopClosing::DetectLoop()
@@ -108,6 +109,10 @@ bool LoopClosing::DetectLoop()
         mlpLoopKeyFrameQueue.pop_front();
         // Avoid that a keyframe can be erased while it is being process by this thread
         mpCurrentKF->SetNotErase();
+//KeyFrame* mpCurrentKF,是keyframe的一个类指针
+//.front就是获取该容器里的第一个元素
+//pop—front移除第一个元素
+//将关键帧里的第一个元素传给currentFrame，设置不要擦除
     }
 
     //If the map contains less than 10 KF or less than 10 KF have passed from last loop detection
@@ -116,6 +121,8 @@ bool LoopClosing::DetectLoop()
         mpKeyFrameDB->add(mpCurrentKF);
         mpCurrentKF->SetErase();
         return false;
+//mLastLoopKFid，初始化为0，上一个关键帧的id
+//如果当前帧的id，小于上一个关键帧+10,先把当前帧加入关键帧库里，再擦除
     }
 
     // Compute reference BoW similarity score
@@ -135,6 +142,7 @@ bool LoopClosing::DetectLoop()
 
         if(score<minScore)
             minScore = score;
+//对每一个关键帧，找到得分最高的帧.
     }
 
     // Query the database imposing the minimum score
@@ -432,12 +440,13 @@ void LoopClosing::CorrectLoop()
     mpCurrentKF->UpdateConnections();
 
     // Retrive keyframes connected to the current keyframe and compute corrected Sim3 pose by propagation
-    mvpCurrentConnectedKFs = mpCurrentKF->GetVectorCovisibleKeyFrames();
-    mvpCurrentConnectedKFs.push_back(mpCurrentKF);
+    mvpCurrentConnectedKFs = mpCurrentKF->GetVectorCovisibleKeyFrames();//取得和当前帧共视的KeyFrame，这些keyFrame就是BestCovisible的KeyFrame
+    mvpCurrentConnectedKFs.push_back(mpCurrentKF);//将currentKeyFrame push到共视关键帧的后面
 
-    KeyFrameAndPose CorrectedSim3, NonCorrectedSim3;
-    CorrectedSim3[mpCurrentKF]=mg2oScw;
-    cv::Mat Twc = mpCurrentKF->GetPoseInverse();
+    KeyFrameAndPose CorrectedSim3, NonCorrectedSim3;//两个map模板类
+    CorrectedSim3[mpCurrentKF]=mg2oScw;//？
+    cv::Mat Twc = mpCurrentKF->GetPoseInverse();//Twc是一个mat矩阵，cv::Mat Tcw = mpTracker->GrabImageStereo(imLeft,imRight,timestamp);
+
 
 
     {
@@ -581,7 +590,8 @@ void LoopClosing::CorrectLoop()
     // Loop closed. Release Local Mapping.
     mpLocalMapper->Release();    
 
-    mLastLoopKFid = mpCurrentKF->mnId;   
+    mLastLoopKFid = mpCurrentKF->mnId;
+
 }
 
 void LoopClosing::SearchAndFuse(const KeyFrameAndPose &CorrectedPosesMap)

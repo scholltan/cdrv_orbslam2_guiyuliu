@@ -47,25 +47,26 @@ public:
 
     typedef pair<set<KeyFrame*>,int> ConsistentGroup;    
     typedef map<KeyFrame*,g2o::Sim3,std::less<KeyFrame*>,
-        Eigen::aligned_allocator<std::pair<const KeyFrame*, g2o::Sim3> > > KeyFrameAndPose;
+        Eigen::aligned_allocator<std::pair<const KeyFrame*, g2o::Sim3> > > KeyFrameAndPose;//STL map是一种关联性的容器
 
 public:
 
     LoopClosing(Map* pMap, KeyFrameDatabase* pDB, ORBVocabulary* pVoc,const bool bFixScale);
-
+    //构造函数，传入三个类指针，bFixScale是什么作用，看该类实体传入的参数，mSensor!=MONOCULAR？判断不为单目
     void SetTracker(Tracking* pTracker);
 
     void SetLocalMapper(LocalMapping* pLocalMapper);
-
+    //两个set函数创建两个类实体，与另外两个类之间相互调用
     // Main function
     void Run();
 
     void InsertKeyFrame(KeyFrame *pKF);
-
+    //插入关键帧，将KF的id放到一个list类型的容器里，主要在tracking里面调用这个函数
     void RequestReset();
 
     // This function will run in a separate thread
     void RunGlobalBundleAdjustment(unsigned long nLoopKF);
+    //进行全局BA
 
     bool isRunningGBA(){
         unique_lock<std::mutex> lock(mMutexGBA);
@@ -75,24 +76,27 @@ public:
         unique_lock<std::mutex> lock(mMutexGBA);
         return mbFinishedGBA;
     }   
+    //两个函数为BA的标志，在运行BA，BA运行结束
 
     void RequestFinish();
 
     bool isFinished();
+    //请求完成，完成，在系统的shutdown函数里调用
 
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
 protected:
 
-    bool CheckNewKeyFrames();
+    bool CheckNewKeyFrames();//检查是否有新的keyFrame进来
 
-    bool DetectLoop();
+    bool DetectLoop();//检测闭环
 
-    bool ComputeSim3();
+    bool ComputeSim3();//计算相似变换Sim3
 
     void SearchAndFuse(const KeyFrameAndPose &CorrectedPosesMap);
+    //？？？
 
-    void CorrectLoop();
+    void CorrectLoop();//纠正闭环
 
     void ResetIfRequested();
     bool mbResetRequested;
@@ -117,18 +121,18 @@ protected:
     std::mutex mMutexLoopQueue;
 
     // Loop detector parameters
-    float mnCovisibilityConsistencyTh;
+    float mnCovisibilityConsistencyTh;//闭环检测的一个参数？？
 
     // Loop detector variables
-    KeyFrame* mpCurrentKF;
-    KeyFrame* mpMatchedKF;
-    std::vector<ConsistentGroup> mvConsistentGroups;
-    std::vector<KeyFrame*> mvpEnoughConsistentCandidates;
-    std::vector<KeyFrame*> mvpCurrentConnectedKFs;
-    std::vector<MapPoint*> mvpCurrentMatchedPoints;
-    std::vector<MapPoint*> mvpLoopMapPoints;
+    KeyFrame* mpCurrentKF;//当前关键帧
+    KeyFrame* mpMatchedKF;//匹配上的关键帧
+    std::vector<ConsistentGroup> mvConsistentGroups; //一致性group？
+    std::vector<KeyFrame*> mvpEnoughConsistentCandidates; //足够的一致性candidates
+    std::vector<KeyFrame*> mvpCurrentConnectedKFs;   //当前有关系的关键帧?
+    std::vector<MapPoint*> mvpCurrentMatchedPoints;  //当前匹配上的点
+    std::vector<MapPoint*> mvpLoopMapPoints; //闭环地图点
     cv::Mat mScw;
-    g2o::Sim3 mg2oScw;
+    g2o::Sim3 mg2oScw; //Sim3为结构体
 
     long unsigned int mLastLoopKFid;
 
@@ -140,10 +144,10 @@ protected:
     std::thread* mpThreadGBA;
 
     // Fix scale in the stereo/RGB-D case
-    bool mbFixScale;
+    bool mbFixScale;//固定尺度
 
 
-    bool mnFullBAIdx;
+    bool mnFullBAIdx;//BA的一个指数？？？
 };
 
 } //namespace ORB_SLAM
